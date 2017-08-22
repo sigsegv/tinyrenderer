@@ -3,26 +3,33 @@
 #include "tgaimage.h"
 #include "model.hpp"
 
+struct vector2i
+{
+    int x, y;
+};
+
 const TGAColor white(255, 255, 255, 255);
 const TGAColor red(255, 0, 0, 255);
+const TGAColor green(0, 255, 0, 255);
+const TGAColor blue(0, 0, 255, 255);
 
-void line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color) {
+void line(vector2i t0, vector2i t1, TGAImage &image, TGAColor color) {
     bool steep = false;
-    if (std::abs(x0-x1)<std::abs(y0-y1)) {
-        std::swap(x0, y0);
-        std::swap(x1, y1);
+    if (std::abs(t0.x-t1.x)<std::abs(t0.y-t1.y)) {
+        std::swap(t0.x, t0.y);
+        std::swap(t1.x, t1.y);
         steep = true;
     }
-    if (x0>x1) {
-        std::swap(x0, x1);
-        std::swap(y0, y1);
+    if (t0.x>t1.x) {
+        std::swap(t0.x, t1.x);
+        std::swap(t0.y, t1.y);
     }
-    int dx = x1-x0;
-    int dy = y1-y0;
+    int dx = t1.x-t0.x;
+    int dy = t1.y-t0.y;
     int derror2 = std::abs(dy)*2;
     int error2 = 0;
-    int y = y0;
-    for (int x=x0; x<=x1; x++) {
+    int y = t0.y;
+    for (int x=t0.x; x<=t1.x; x++) {
         if (steep) {
             image.set(y, x, color);
         } else {
@@ -30,19 +37,25 @@ void line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color) {
         }
         error2 += derror2;
         if (error2 > dx) {
-            y += (y1>y0?1:-1);
+            y += (t1.y>t0.y?1:-1);
             error2 -= dx*2;
         }
     }
 }
 
+void triangle(vector2i t0, vector2i t1, vector2i t2, TGAImage& image, TGAColor& color)
+{
+    // sort vertices, so t0 lowest on y-axis, and t2 is highest y-axis
+    if(t0.y>t1.y) std::swap(t0, t1);
+    if(t0.y>t2.y) std::swap(t0, t2);
+    if(t1.y>t2.y) std::swap(t1, t2);
+    line(t0, t1, image, green);
+    line(t1, t2, image, green);
+    line(t2, t0, image, red);
+}
+
 int main(int argc, char** argv)
 {
-    TGAImage image1(100, 100, TGAImage::RGB);
-    line(13, 20, 80, 40, image1, white);
-    image1.flip_vertically(); // i want to have the origin at the left bottom corner of the image
-    image1.write_tga_file("output.tga");
-    
     model model1;
     model1.load_from_disk("assets/african_head.obj");
     assert(model1.v.size() == 1258);
@@ -67,11 +80,13 @@ int main(int argc, char** argv)
             int y0 = (v0.y+1.)*height/2.;
             int x1 = (v1.x+1.)*width/2.;
             int y1 = (v1.y+1.)*height/2.;
-            line(x0,y0,x1,y1,image,white);
+            struct vector2i t0 = {x0, y0};
+            struct vector2i t1 = {x1, y1};
+            line(t0, t1, image, white);
         }
     }
     image.flip_vertically();
-    image.write_tga_file("output_head.tga");
+    image.write_tga_file("output_head_wireframe.tga");
     
     return 0;
 }
