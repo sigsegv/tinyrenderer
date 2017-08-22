@@ -2,11 +2,10 @@
 #include <fstream>
 #include "tgaimage.h"
 #include "model.hpp"
+#include "vector2.hpp"
+#include "vector3.hpp"
 
-struct vector2i
-{
-    int x, y;
-};
+using vector2i = vector2<int>;
 
 const TGAColor white(255, 255, 255, 255);
 const TGAColor red(255, 0, 0, 255);
@@ -80,8 +79,8 @@ int main(int argc, char** argv)
             int y0 = (v0.y+1.)*height/2.;
             int x1 = (v1.x+1.)*width/2.;
             int y1 = (v1.y+1.)*height/2.;
-            struct vector2i t0 = {x0, y0};
-            struct vector2i t1 = {x1, y1};
+            vector2i t0 = {x0, y0};
+            vector2i t1 = {x1, y1};
             line(t0, t1, image, white);
         }
     }
