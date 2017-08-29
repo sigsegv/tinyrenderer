@@ -117,6 +117,22 @@ public:
         // TODO https://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/
         return x == rhs.x && y == rhs.y && z == rhs.z;
     }
+    
+    T& operator[](size_t pos)
+    {
+        if(pos == 0) return x;
+        if(pos == 1) return y;
+        if(pos == 2) return z;
+        throw std::out_of_range("this type only has 3 dimensions");
+    }
+    
+    const T& operator[](size_t pos) const
+    {
+        if(pos == 0) return x;
+        if(pos == 1) return y;
+        if(pos == 2) return z;
+        throw std::out_of_range("this type only has 3 dimensions");
+    }
 };
     
 template<typename T>

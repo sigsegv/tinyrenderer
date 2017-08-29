@@ -2,10 +2,7 @@
 #include <fstream>
 #include "tgaimage.h"
 #include "model.hpp"
-#include "vector2.hpp"
-#include "vector3.hpp"
-
-using vector2i = vector2<int>;
+#include "geometry.hpp"
 
 const TGAColor white(255, 255, 255, 255);
 const TGAColor red(255, 0, 0, 255);
@@ -42,6 +39,7 @@ void line(vector2i t0, vector2i t1, TGAImage &image, TGAColor color) {
     }
 }
 
+/*
 void triangle(vector2i t0, vector2i t1, vector2i t2, TGAImage& image, TGAColor& color)
 {
     // sort vertices, so t0 lowest on y-axis, and t2 is highest y-axis
@@ -51,6 +49,33 @@ void triangle(vector2i t0, vector2i t1, vector2i t2, TGAImage& image, TGAColor& 
     line(t0, t1, image, green);
     line(t1, t2, image, green);
     line(t2, t0, image, red);
+}
+*/
+
+void triangle(const std::array<vector2i, 3>& pts,  TGAImage& image, const TGAColor& color)
+{
+    vector2i bboxmin{image.get_width()-1, image.get_height()-1};
+    vector2i bboxmax{0, 0};
+    vector2i clamp = bboxmin;
+    for(int i=0; i<3; ++i)
+    {
+        for(int j=0; j<2; ++j)
+        {
+            int val = pts[i][j];
+            bboxmin[j] = std::max(0, std::min(bboxmin[j], val));
+            bboxmax[j] = std::min(clamp[j], std::max(bboxmax[j], val));
+        }
+    }
+    vector2i p;
+    for(p.x = bboxmin.x; p.x <= bboxmax.x; ++p.x)
+    {
+        for(p.y = bboxmin.y; p.y <= bboxmax.y; ++p.y)
+        {
+            vector3f bc_screen = barycentric(pts[0], pts[1], pts[2], p);
+            if(bc_screen.x < 0.f || bc_screen.y < 0.f || bc_screen.z < 0.f) continue;
+            image.set(p.x, p.y, color);
+        }
+    }
 }
 
 int main(int argc, char** argv)
@@ -86,6 +111,14 @@ int main(int argc, char** argv)
     }
     image.flip_vertically();
     image.write_tga_file("output_head_wireframe.tga");
+    
+    TGAImage frame(200, 200, TGAImage::RGB);
+    frame.clear();
+    
+    std::array<vector2i, 3> pts = {{ {10,10}, {100,30}, {190, 160} }};
+    triangle(pts, frame, red);
+    frame.flip_vertically();
+    frame.write_tga_file("framebuffer.tga");
     
     return 0;
 }

@@ -13,8 +13,7 @@ template <typename T>
 class vector2
 {
 public:
-    T x;
-    T y;
+    T x, y;
     
     /**
      * The length of this vector
@@ -111,6 +110,20 @@ public:
     constexpr bool operator!=(const vector2& rhs) const noexcept
     {
         return !(*this==rhs);
+    }
+    
+    T& operator[](size_t pos)
+    {
+        if(pos == 0) return x;
+        if(pos == 1) return y;
+        throw std::out_of_range("this type only has 2 dimensions");
+    }
+    
+    const T& operator[](size_t pos) const
+    {
+        if(pos == 0) return x;
+        if(pos == 1) return y;
+        throw std::out_of_range("this type only has 2 dimensions");
     }
     
     constexpr bool operator==(const vector2& rhs) const noexcept
