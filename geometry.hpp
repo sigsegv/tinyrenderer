@@ -10,6 +10,12 @@ using vector3f = vector3<float>;
 
 /**
  * Compute barycentric of 2d triangle defined by v1, v2, v3.
+ *
+ * @param v1 a point of the triangle
+ * @param v2 a point of the triangle
+ * @param v3 a point of the triangle
+ * @param p a point to test
+ * @return barycentric vector, if any component is negative, p lies outside of the triangle
  */
 template<typename T>
 vector3f barycentric(const vector2<T>& v1, const vector2<T>& v2, const vector2<T>& v3, const vector2<T>& p)

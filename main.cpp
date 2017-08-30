@@ -1,5 +1,6 @@
 #include <cassert>
 #include <fstream>
+#include <random>
 #include "tgaimage.h"
 #include "model.hpp"
 #include "geometry.hpp"
@@ -89,6 +90,8 @@ int main(int argc, char** argv)
     const int width = 500;
     const int height = 500;
     
+    // example 1 : wire frame
+    
     TGAImage image(width, height, TGAImage::RGB);
     image.clear();
     
@@ -112,6 +115,8 @@ int main(int argc, char** argv)
     image.flip_vertically();
     image.write_tga_file("output_head_wireframe.tga");
     
+    // example 2 : single filled triangle
+    
     TGAImage frame(200, 200, TGAImage::RGB);
     frame.clear();
     
@@ -119,6 +124,31 @@ int main(int argc, char** argv)
     triangle(pts, frame, red);
     frame.flip_vertically();
     frame.write_tga_file("framebuffer.tga");
+    
+    // example 3 : filled triangles with random colors
+    
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(0, 255);
+    
+    TGAImage frame2(width, height, TGAImage::RGB);
+    frame.clear();
+    
+    const float half_width = width / 2.f;
+    const float half_height = height / 2.f;
+    for(const face& f: model1.f)
+    {
+        vector3f& wc_v1 = model1.v[f.v1];
+        vector3f& wc_v2 = model1.v[f.v2];
+        vector3f& wc_v3 = model1.v[f.v3];
+        std::array<vector2i, 3> sc_pts;
+        sc_pts[0] = { static_cast<int>((wc_v1.x + 1.f) * half_width), static_cast<int>((wc_v1.y + 1.f) * half_height) };
+        sc_pts[1] = { static_cast<int>((wc_v2.x + 1.f) * half_width), static_cast<int>((wc_v2.y + 1.f) * half_height) };
+        sc_pts[2] = { static_cast<int>((wc_v3.x + 1.f) * half_width), static_cast<int>((wc_v3.y + 1.f) * half_height) };
+        triangle(sc_pts, frame2, TGAColor(dis(gen), dis(gen), dis(gen), 255));
+    }
+    frame2.flip_vertically();
+    frame2.write_tga_file("output_head_filled_colors.tga");
     
     return 0;
 }
