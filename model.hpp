@@ -3,21 +3,25 @@
 #include <string>
 #include <vector>
 #include <array>
+#include "geometry.hpp"
 
-struct vertex
-{
-    float x,y,z;
-};
+//struct vertex
+//{
+//    float x,y,z;
+//};
+using vertex = vector3f;
+//using vertex_texture = vector2f;
+using vertex_normal = vector3f;
 
 struct vertex_texture
 {
     float u,v;
 };
 
-struct vertex_normal
-{
-    float x,y,z;
-};
+//struct vertex_normal
+//{
+//    float x,y,z;
+//};
 
 struct face
 {
