@@ -36,7 +36,7 @@ public:
         // TODO make constexpr
         const real_t mag = magnitude();
         if(mag == 0.0) return vector2{0.0,0.0};
-        return (*this) / magnitude();
+        return (*this) / mag;
     }
     
     /**
