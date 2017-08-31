@@ -89,6 +89,8 @@ int main(int argc, char** argv)
     
     const int width = 500;
     const int height = 500;
+    const float half_width = width / 2.f;
+    const float half_height = height / 2.f;
     
     // example 1 : wire frame
     
@@ -132,10 +134,8 @@ int main(int argc, char** argv)
     std::uniform_int_distribution<> dis(0, 255);
     
     TGAImage frame2(width, height, TGAImage::RGB);
-    frame.clear();
+    frame2.clear();
     
-    const float half_width = width / 2.f;
-    const float half_height = height / 2.f;
     for(const face& f: model1.f)
     {
         vector3f& wc_v1 = model1.v[f.v1];
@@ -149,6 +149,34 @@ int main(int argc, char** argv)
     }
     frame2.flip_vertically();
     frame2.write_tga_file("output_head_filled_colors.tga");
+    
+    // example 4 : filled triangles flat shaded
+    
+    TGAImage frame3(width, height, TGAImage::RGB);
+    frame3.clear();
+
+    vector3f light_dir = {0.f, 0.f, -1.f};
+
+    for(const face& f: model1.f)
+    {
+        vector3f& wc_v1 = model1.v[f.v1];
+        vector3f& wc_v2 = model1.v[f.v2];
+        vector3f& wc_v3 = model1.v[f.v3];
+        std::array<vector2i, 3> sc_pts;
+        sc_pts[0] = { static_cast<int>((wc_v1.x + 1.f) * half_width), static_cast<int>((wc_v1.y + 1.f) * half_height) };
+        sc_pts[1] = { static_cast<int>((wc_v2.x + 1.f) * half_width), static_cast<int>((wc_v2.y + 1.f) * half_height) };
+        sc_pts[2] = { static_cast<int>((wc_v3.x + 1.f) * half_width), static_cast<int>((wc_v3.y + 1.f) * half_height) };
+        
+        vector3f n = (wc_v3 - wc_v1).cross(wc_v2 - wc_v1).unit(); // get normal of face from cross product of two of the faces side
+        float light_intensity = n.dot(light_dir);
+        if(light_intensity > 0.f)
+        {
+            const int tint = static_cast<int>(light_intensity * 255.f);
+            triangle(sc_pts, frame3, TGAColor(tint, tint, tint, 255));
+        }
+    }
+    frame3.flip_vertically();
+    frame3.write_tga_file("output_head_flat_shaded.tga");
     
     return 0;
 }
