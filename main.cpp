@@ -1,6 +1,7 @@
 #include <cassert>
 #include <fstream>
 #include <random>
+#include <limits>
 #include "tgaimage.h"
 #include "model.hpp"
 #include "geometry.hpp"
@@ -75,6 +76,43 @@ void triangle(const std::array<vector2i, 3>& pts,  TGAImage& image, const TGACol
             vector3f bc_screen = barycentric(pts[0], pts[1], pts[2], p);
             if(bc_screen.x < 0.f || bc_screen.y < 0.f || bc_screen.z < 0.f) continue;
             image.set(p.x, p.y, color);
+        }
+    }
+}
+
+void triangle3(const std::array<vector3f, 3>& pts,  TGAImage& image, const TGAColor& color, float* zbuffer)
+{
+    const int width = image.get_width();
+    vector2f bboxmin{ std::numeric_limits<float>::max(),  std::numeric_limits<float>::max()};
+    vector2f bboxmax{-std::numeric_limits<float>::max(), -std::numeric_limits<float>::max()};
+    vector2f clamp{static_cast<float>(image.get_width()-1), static_cast<float>(image.get_height()-1)};
+    for(int i=0; i<3; ++i)
+    {
+        for(int j=0; j<2; ++j)
+        {
+            int val = pts[i][j];
+            bboxmin[j] = std::max(0.f, std::min(bboxmin[j], static_cast<float>(val)));
+            bboxmax[j] = std::min(clamp[j], std::max(bboxmax[j], static_cast<float>(val)));
+        }
+    }
+    vector3f p;
+    for(p.x = bboxmin.x; p.x <= bboxmax.x; ++p.x)
+    {
+        for(p.y = bboxmin.y; p.y <= bboxmax.y; ++p.y)
+        {
+            vector3f bc_screen = barycentric3(pts[0], pts[1], pts[2], p);
+            if(bc_screen.x < 0.f || bc_screen.y < 0.f || bc_screen.z < 0.f) continue;
+            p.z = 0;
+            for(int i=0; i<3; ++i)
+            {
+                p.z += pts[i][2]*bc_screen[i];
+            }
+            const int iz = static_cast<int>(p.x + p.y * width);
+            if(zbuffer[iz] < p.z)
+            {
+                zbuffer[iz] = p.z;
+                image.set(p.x, p.y, color);
+            }
         }
     }
 }
@@ -177,6 +215,44 @@ int main(int argc, char** argv)
     }
     frame3.flip_vertically();
     frame3.write_tga_file("output_head_flat_shaded.tga");
+    
+    // example 5 : z buffer
+    
+    std::array<float, width * height> zbuffer;
+    zbuffer.fill(std::numeric_limits<float>::lowest());
+    
+    TGAImage frame4(width, height, TGAImage::RGB);
+    frame4.clear();
+//    unsigned char* buf = frame4.buffer();
+//    unsigned char* end = buf + (width * height * 3);
+//    while(buf != end)
+//    {
+//        *buf = 0xFF; ++buf;
+//        *buf = 0x00; ++buf;
+//        *buf = 0xFF; ++buf;
+//    }
+    
+    for(const face& f: model1.f)
+    {
+        vector3f& wc_v1 = model1.v[f.v1];
+        vector3f& wc_v2 = model1.v[f.v2];
+        vector3f& wc_v3 = model1.v[f.v3];
+        std::array<vector3f, 3> sc_pts;
+        sc_pts[0] = { (wc_v1.x + 1.f) * half_width, (wc_v1.y + 1.f) * half_height, wc_v1.z };
+        sc_pts[1] = { (wc_v2.x + 1.f) * half_width, (wc_v2.y + 1.f) * half_height, wc_v2.z };
+        sc_pts[2] = { (wc_v3.x + 1.f) * half_width, (wc_v3.y + 1.f) * half_height, wc_v3.z };
+        
+        vector3f n = (wc_v3 - wc_v1).cross(wc_v2 - wc_v1).unit(); // get normal of face from cross product of two of the faces side
+        float light_intensity = n.dot(light_dir);
+        if(light_intensity > 0.f)
+        {
+            const int tint = static_cast<int>(light_intensity * 255.f);
+            triangle3(sc_pts, frame4, TGAColor(tint, tint, tint, 255), zbuffer.data());
+        }
+    }
+    
+    frame4.flip_vertically();
+    frame4.write_tga_file("output_head_flat_shaded_zbuffer.tga");
     
     return 0;
 }

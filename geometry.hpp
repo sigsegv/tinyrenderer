@@ -27,3 +27,22 @@ vector3f barycentric(const vector2<T>& v1, const vector2<T>& v2, const vector2<T
     vector3f uf = {static_cast<float>(u.x), static_cast<float>(u.y), static_cast<float>(u.z)};
     return {1.f - (uf.x + uf.y) / uf.z, uf.y / uf.z, uf.x / uf.z};
 }
+
+// source: https://gamedev.stackexchange.com/a/23745
+template<typename T>
+vector3f barycentric3(const vector3<T>& a, const vector3<T>& b, const vector3<T>& c, const vector3<T>& p)
+{
+    vector3<T> v0 = b - a;
+    vector3<T> v1 = c - a;
+    vector3<T> v2 = p - a;
+    const float d00 = v0.dot(v0);
+    const float d01 = v0.dot(v1);
+    const float d11 = v1.dot(v1);
+    const float d20 = v2.dot(v0);
+    const float d21 = v2.dot(v1);
+    const float denom = d00 * d11 - d01 * d01;
+    const float v = (d11 * d20 - d01 * d21) / denom;
+    const float w = (d00 * d21 - d01 * d20) / denom;
+    const float u = 1.f - v - w;
+    return {u, v, w};
+}
