@@ -148,12 +148,6 @@ void triangle3_texture(const std::array<vector3f, 3>& pts,  TGAImage& image, con
             const int iz = static_cast<int>(p.x + p.y * width);
             if(zbuffer[iz] < p.z)
             {
-                //                color.r *= light_intensity;
-                //                color.g *= light_intensity;
-                //                color.b *= light_intensity;
-                //                const int tint = static_cast<int>(light_intensity * 255.f);
-                //                TGAColor color(tint, tint, tint, 255);
-                
                 zbuffer[iz] = p.z;
                 // determine location in texture
                 vector2f a = {vts[0].u, vts[0].v};
@@ -166,6 +160,9 @@ void triangle3_texture(const std::array<vector3f, 3>& pts,  TGAImage& image, con
                 tc.x *= texture.get_width();
                 tc.y *= texture.get_height();
                 TGAColor color = texture.get(tc.x, tc.y);
+//                color.r *= light_intensity;
+//                color.g *= light_intensity;
+//                color.b *= light_intensity;
                 image.set(p.x, p.y, color);
             }
         }
