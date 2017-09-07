@@ -380,17 +380,9 @@ int main(int argc, char** argv)
             sc_pts[1] = { wc_v2.x  / v2_denom, wc_v2.y / v2_denom, wc_v2.z / v2_denom };
             sc_pts[2] = { wc_v3.x  / v3_denom, wc_v3.y / v3_denom, wc_v3.z / v3_denom };
             
-//            sc_pts[0] = { wc_v1.x  / (1.f - wc_v1.z / camera_distance_on_z_axis), wc_v1.y / (1.f - wc_v1.z / camera_distance_on_z_axis), wc_v1.z };
-//            sc_pts[1] = { wc_v2.x  / (1.f - wc_v1.z / camera_distance_on_z_axis), wc_v2.y / (1.f - wc_v1.z / camera_distance_on_z_axis), wc_v2.z };
-//            sc_pts[2] = { wc_v3.x  / (1.f - wc_v1.z / camera_distance_on_z_axis), wc_v3.y / (1.f - wc_v1.z / camera_distance_on_z_axis), wc_v3.z };
-            
             sc_pts[0] = { (sc_pts[0].x + 1.f) * half_width, (sc_pts[0].y + 1.f) * half_height, sc_pts[0].z };
             sc_pts[1] = { (sc_pts[1].x + 1.f) * half_width, (sc_pts[1].y + 1.f) * half_height, sc_pts[1].z };
             sc_pts[2] = { (sc_pts[2].x + 1.f) * half_width, (sc_pts[2].y + 1.f) * half_height, sc_pts[2].z };
-            
-//            sc_pts[0] = { ((wc_v1.x + 1.f) * half_width) / (1.f - wc_v1.z / camera_distance_on_z_axis), ((wc_v1.y + 1.f) * half_height) / (1.f - wc_v1.z / camera_distance_on_z_axis), wc_v1.z };
-//            sc_pts[1] = { ((wc_v2.x + 1.f) * half_width) / (1.f - wc_v2.z / camera_distance_on_z_axis), ((wc_v2.y + 1.f) * half_height) / (1.f - wc_v2.z / camera_distance_on_z_axis), wc_v2.z };
-//            sc_pts[2] = { ((wc_v3.x + 1.f) * half_width) / (1.f - wc_v3.z / camera_distance_on_z_axis), ((wc_v3.y + 1.f) * half_height) / (1.f - wc_v3.z / camera_distance_on_z_axis), wc_v3.z };
             
             vector3f n = (wc_v3 - wc_v1).cross(wc_v2 - wc_v1).unit(); // get normal of face from cross product of two of the faces side
             float light_intensity = n.dot(light_dir);
