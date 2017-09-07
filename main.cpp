@@ -307,19 +307,20 @@ int main(int argc, char** argv)
         frame4.flip_vertically();
         frame4.write_tga_file("output_head_flat_shaded_zbuffer.tga");
     }
+    
+    TGAImage texture;
+    if(!texture.read_tga_file("assets/african_head_diffuse.tga"))
+    {
+        std::cout << "Error reading texture\n";
+        return 1;
+    }
+    texture.flip_vertically();
 
     // example 6 : diffuse texture
     
     {
         TGAImage frame5(width, height, TGAImage::RGB);
         frame5.clear();
-        TGAImage texture;
-        if(!texture.read_tga_file("assets/african_head_diffuse.tga"))
-        {
-            std::cout << "Error reading texture\n";
-            return 1;
-        }
-        texture.flip_vertically();
         
         std::array<float, width * height> zbuffer;
         zbuffer.fill(std::numeric_limits<float>::lowest());
@@ -348,6 +349,59 @@ int main(int argc, char** argv)
         
         frame5.flip_vertically();
         frame5.write_tga_file("output_head_textured.tga");
+    }
+    
+    // example 7 : perspective
+    
+    float camera_distance_on_z_axis = 4.f;
+    
+    {
+        TGAImage frame5(width, height, TGAImage::RGB);
+        frame5.clear();
+        
+        std::array<float, width * height> zbuffer;
+        zbuffer.fill(std::numeric_limits<float>::lowest());
+        
+        for(const face& f: model1.f)
+        {
+            std::array<vertex_texture, 3> vt_pts;
+            vt_pts[0] = model1.vt[f.vt1];
+            vt_pts[1] = model1.vt[f.vt2];
+            vt_pts[2] = model1.vt[f.vt3];
+            vector3f& wc_v1 = model1.v[f.v1];
+            vector3f& wc_v2 = model1.v[f.v2];
+            vector3f& wc_v3 = model1.v[f.v3];
+            std::array<vector3f, 3> sc_pts;
+            const float v1_denom = 1.f - ( wc_v1.z / camera_distance_on_z_axis );
+            const float v2_denom = 1.f - ( wc_v2.z / camera_distance_on_z_axis );
+            const float v3_denom = 1.f - ( wc_v3.z / camera_distance_on_z_axis );
+            
+            sc_pts[0] = { wc_v1.x  / v1_denom, wc_v1.y / v1_denom, wc_v1.z / v1_denom };
+            sc_pts[1] = { wc_v2.x  / v2_denom, wc_v2.y / v2_denom, wc_v2.z / v2_denom };
+            sc_pts[2] = { wc_v3.x  / v3_denom, wc_v3.y / v3_denom, wc_v3.z / v3_denom };
+            
+//            sc_pts[0] = { wc_v1.x  / (1.f - wc_v1.z / camera_distance_on_z_axis), wc_v1.y / (1.f - wc_v1.z / camera_distance_on_z_axis), wc_v1.z };
+//            sc_pts[1] = { wc_v2.x  / (1.f - wc_v1.z / camera_distance_on_z_axis), wc_v2.y / (1.f - wc_v1.z / camera_distance_on_z_axis), wc_v2.z };
+//            sc_pts[2] = { wc_v3.x  / (1.f - wc_v1.z / camera_distance_on_z_axis), wc_v3.y / (1.f - wc_v1.z / camera_distance_on_z_axis), wc_v3.z };
+            
+            sc_pts[0] = { (sc_pts[0].x + 1.f) * half_width, (sc_pts[0].y + 1.f) * half_height, sc_pts[0].z };
+            sc_pts[1] = { (sc_pts[1].x + 1.f) * half_width, (sc_pts[1].y + 1.f) * half_height, sc_pts[1].z };
+            sc_pts[2] = { (sc_pts[2].x + 1.f) * half_width, (sc_pts[2].y + 1.f) * half_height, sc_pts[2].z };
+            
+//            sc_pts[0] = { ((wc_v1.x + 1.f) * half_width) / (1.f - wc_v1.z / camera_distance_on_z_axis), ((wc_v1.y + 1.f) * half_height) / (1.f - wc_v1.z / camera_distance_on_z_axis), wc_v1.z };
+//            sc_pts[1] = { ((wc_v2.x + 1.f) * half_width) / (1.f - wc_v2.z / camera_distance_on_z_axis), ((wc_v2.y + 1.f) * half_height) / (1.f - wc_v2.z / camera_distance_on_z_axis), wc_v2.z };
+//            sc_pts[2] = { ((wc_v3.x + 1.f) * half_width) / (1.f - wc_v3.z / camera_distance_on_z_axis), ((wc_v3.y + 1.f) * half_height) / (1.f - wc_v3.z / camera_distance_on_z_axis), wc_v3.z };
+            
+            vector3f n = (wc_v3 - wc_v1).cross(wc_v2 - wc_v1).unit(); // get normal of face from cross product of two of the faces side
+            float light_intensity = n.dot(light_dir);
+            if(light_intensity > 0.f)
+            {
+                triangle3_texture(sc_pts, frame5, vt_pts, texture, zbuffer.data(), light_intensity);
+            }
+        }
+        
+        frame5.flip_vertically();
+        frame5.write_tga_file("output_head_textured_perspective.tga");
     }
     
     return 0;
