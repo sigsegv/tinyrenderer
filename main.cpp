@@ -494,7 +494,7 @@ int main(int argc, char** argv)
         constexpr unsigned width = 800;
         constexpr unsigned height = 800;
         
-        vector3f eye = {0.f, 0.f, 4.f};
+        vector3f eye = {4.f, 4.f, 4.f};
         vector3f center = {0.f, 0.f, 0.f};
         vector3f up = {0.f, 1.f, 0.f};
         matrix44f model = matrix44f::identity();
@@ -541,14 +541,14 @@ int main(int argc, char** argv)
             
             vector3f n = (wc_v3 - wc_v1).cross(wc_v2 - wc_v1).unit(); // get normal of face from cross product of two of the faces side
             float light_intensity = n.dot(light_dir);
-            if(light_intensity > 0.f)
+            //if(light_intensity > 0.f)
             {
                 triangle3_texture2(sc_pts, frame, vt_pts, texture, zbuffer.data(), light_intensity);
             }
         }
         
         frame.flip_vertically();
-        frame.write_tga_file("output_head_lesson5.tga");
+        frame.write_tga_file("output_head_lesson5_angled.tga");
     }
     
     return 0;
