@@ -1,4 +1,5 @@
 #include <cassert>
+#include <cstring>
 #include <fstream>
 #include <random>
 #include <limits>
@@ -6,6 +7,8 @@
 #include "tgaimage.h"
 #include "model.hpp"
 #include "geometry.hpp"
+#include "matrix.hpp"
+
 
 const TGAColor white(255, 255, 255, 255);
 const TGAColor red(255, 0, 0, 255);
@@ -163,14 +166,105 @@ void triangle3_texture(const std::array<vector3f, 3>& pts,  TGAImage& image, con
 //                color.r *= light_intensity;
 //                color.g *= light_intensity;
 //                color.b *= light_intensity;
+                //std::cout << "<" << p.x << ", " << p.y << ">\n";
                 image.set(p.x, p.y, color);
             }
         }
     }
 }
 
+void triangle3_texture2(const std::array<vector3i, 3>& pts,  TGAImage& image, const std::array<vertex_texture, 3>& vts, const TGAImage& texture, float* zbuffer, float light_intensity)
+{
+    vector3i t0 = pts[0]; t0.z = 0;
+    vector3i t1 = pts[1]; t1.z = 0;
+    vector3i t2 = pts[2]; t2.z = 0;
+    
+    const int width = image.get_width();
+    vector2f bboxmin{ std::numeric_limits<float>::max(),  std::numeric_limits<float>::max()};
+    vector2f bboxmax{-std::numeric_limits<float>::max(), -std::numeric_limits<float>::max()};
+    vector2f clamp{static_cast<float>(image.get_width()-1), static_cast<float>(image.get_height()-1)};
+    for(int i=0; i<3; ++i)
+    {
+        for(int j=0; j<2; ++j)
+        {
+            int val = pts[i][j];
+            bboxmin[j] = std::max(0.f, std::min(bboxmin[j], static_cast<float>(val)));
+            bboxmax[j] = std::min(clamp[j], std::max(bboxmax[j], static_cast<float>(val)));
+        }
+    }
+    vector3i p{0, 0,  0};
+    for(p.x = bboxmin.x; p.x <= bboxmax.x; ++p.x)
+    {
+        for(p.y = bboxmin.y; p.y <= bboxmax.y; ++p.y)
+        {
+            vector3f bc_screen = barycentric3(t0, t1, t2, p);
+            if(bc_screen.x < 0.f || bc_screen.y < 0.f || bc_screen.z < 0.f) continue;
+            p.z = 0;
+            for(int i=0; i<3; ++i)
+            {
+                p.z += pts[i][2]*bc_screen[i];
+            }
+            const int iz = static_cast<int>(p.x + p.y * width);
+            if(zbuffer[iz] < p.z)
+            {
+                zbuffer[iz] = p.z;
+                // determine location in texture
+                vector2f a = {vts[0].u, vts[0].v};
+                vector2f b = {vts[1].u, vts[1].v};
+                vector2f c = {vts[2].u, vts[2].v};
+                a = a * bc_screen[0];
+                b = b * bc_screen[1];
+                c = c * bc_screen[2];
+                vector2f tc = a + b + c;
+                tc.x *= texture.get_width();
+                tc.y *= texture.get_height();
+                TGAColor color = texture.get(tc.x, tc.y);
+                //                color.r *= light_intensity;
+                //                color.g *= light_intensity;
+                //                color.b *= light_intensity;
+                image.set(p.x, p.y, color);
+            }
+        }
+    }
+}
+
+/**
+ * @return view matrix
+ */
+matrix44f look_at(const vector3f& eye, const vector3f& centre, const vector3f& up)
+{
+    const vector3f z = (eye - centre).unit();
+    const vector3f x = up.cross(z).unit();
+    const vector3f y = z.cross(x).unit();
+    matrix44f minv = matrix44f::identity();
+    matrix44f tr = matrix44f::identity();
+    for(int i=0; i<3; ++i)
+    {
+        minv[0][i] = x[i];
+        minv[1][i] = y[i];
+        minv[2][i] = z[i];
+        tr[i][3] = -centre[i];
+    }
+    return minv*tr;
+}
+
+matrix44f view_port(int x, int y, int w, int h)
+{
+    constexpr float kDepthHalf = 255.f / 2.f;
+    matrix44f m = matrix44f::identity();
+    m[0][3] = x+w/2.f;
+    m[1][3] = y+h/2.f;
+    m[2][3] = kDepthHalf;
+    m[0][0] = w/2.f;
+    m[1][1] = h/2.f;
+    m[2][2] = kDepthHalf;
+    return m;
+}
+
 int main(int argc, char** argv)
 {
+    //matrix4_test();
+    
     model model1;
     model1.load_from_disk("assets/african_head.obj");
     assert(model1.v.size() == 1258);
@@ -394,6 +488,67 @@ int main(int argc, char** argv)
         
         frame5.flip_vertically();
         frame5.write_tga_file("output_head_textured_perspective.tga");
+    }
+    
+    {
+        constexpr unsigned width = 800;
+        constexpr unsigned height = 800;
+        
+        vector3f eye = {4.f, 4.f, 4.f};
+        vector3f center = {0.f, 0.f, 0.f};
+        vector3f up = {0.f, 1.f, 0.f};
+        matrix44f model = matrix44f::identity();
+        matrix44f view = look_at(eye, center, up);
+        //std::cout << "view:\n" << view << "\n";
+        matrix44f projection = matrix44f::identity();
+        projection[3][2] = -1.f/(eye-center).magnitude();
+        //std::cout << "projection:\n" << projection << "\n";
+        matrix44f viewport = view_port(width/8,height/8,width*3/4,height*3/4);
+        //std::cout << "viewport:\n" << viewport << "\n";
+        
+        TGAImage frame(width, height, TGAImage::RGB);
+        frame.clear();
+        
+        std::array<float, width * height> zbuffer;
+        zbuffer.fill(std::numeric_limits<float>::lowest());
+        
+        for(const face& f: model1.f)
+        {
+            std::array<vertex_texture, 3> vt_pts;
+            vt_pts[0] = model1.vt[f.vt1];
+            vt_pts[1] = model1.vt[f.vt2];
+            vt_pts[2] = model1.vt[f.vt3];
+            vector3f& wc_v1 = model1.v[f.v1];
+            vector3f& wc_v2 = model1.v[f.v2];
+            vector3f& wc_v3 = model1.v[f.v3];
+            std::array<vector3i, 3> sc_pts;
+            
+            matrix44f ctm = viewport * projection * view * model;
+            
+            matrix41f v = vec3f_to_mat41f(wc_v1);
+            v = ctm * v;
+            sc_pts[0]= vec3f_to_vec3i(mat41f_to_vec3f(v));
+            
+            v = vec3f_to_mat41f(wc_v2);
+            v = ctm * v;
+            sc_pts[1]= vec3f_to_vec3i(mat41f_to_vec3f(v));
+            
+            v = vec3f_to_mat41f(wc_v3);
+            v = ctm * v;
+            sc_pts[2]= vec3f_to_vec3i(mat41f_to_vec3f(v));
+            
+            //std::cout << sc_pts[0] << ", " << sc_pts[1] << ", " << sc_pts[2] << "\n";
+            
+            vector3f n = (wc_v3 - wc_v1).cross(wc_v2 - wc_v1).unit(); // get normal of face from cross product of two of the faces side
+            float light_intensity = n.dot(light_dir);
+            //if(light_intensity > 0.f)
+            {
+                triangle3_texture2(sc_pts, frame, vt_pts, texture, zbuffer.data(), light_intensity);
+            }
+        }
+        
+        frame.flip_vertically();
+        frame.write_tga_file("output_head_lesson5_angled.tga");
     }
     
     return 0;

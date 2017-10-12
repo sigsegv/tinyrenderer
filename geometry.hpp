@@ -2,6 +2,7 @@
 
 #include "vector2.hpp"
 #include "vector3.hpp"
+#include "matrix.hpp"
 
 using vector2i = vector2<int>;
 using vector2f = vector2<float>;
@@ -45,4 +46,19 @@ vector3f barycentric3(const vector3<T>& a, const vector3<T>& b, const vector3<T>
     const float w = (d00 * d21 - d01 * d20) / denom;
     const float u = 1.f - v - w;
     return {u, v, w};
+}
+
+inline matrix41f vec3f_to_mat41f(const vector3f& v)
+{
+    return matrix41f{v.x, v.y, v.z, 1.f};
+}
+
+inline vector3f mat41f_to_vec3f(const matrix41f& m)
+{
+    return vector3f{m[0][0] / m[3][0], m[1][0] / m[3][0], m[2][0] / m[3][0]};
+}
+
+inline vector3i vec3f_to_vec3i(const vector3f& v)
+{
+    return { static_cast<int>(v.x + .5f), static_cast<int>(v.y + .5f), static_cast<int>(v.z + .5f) };
 }
