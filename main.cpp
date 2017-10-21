@@ -173,6 +173,24 @@ void triangle3_texture(const std::array<vector3f, 3>& pts,  TGAImage& image, con
     }
 }
 
+// we assume out has dimensions that "match" zbuffer
+// out is single channel
+// values in zbuffer are from 0-255
+void dump_zbuffer(float* zbuffer, TGAImage& out)
+{
+    const int w = out.get_width();
+    const int h = out.get_height();
+    for(int r = 0; r < h; ++r)
+    {
+        for(int c = 0; c < w; ++c)
+        {
+            size_t offset = h * r + c;
+            TGAColor color(static_cast<int>(zbuffer[offset]), 1);
+            out.set(c, r, color);
+        }
+    }
+}
+
 void triangle3_texture2(const std::array<vector3i, 3>& pts,  TGAImage& image, const std::array<vertex_texture, 3>& vts, const TGAImage& texture, float* zbuffer, float light_intensity)
 {
     vector3i t0 = pts[0]; t0.z = 0;
@@ -207,6 +225,10 @@ void triangle3_texture2(const std::array<vector3i, 3>& pts,  TGAImage& image, co
             const int iz = static_cast<int>(p.x + p.y * width);
             if(zbuffer[iz] < p.z)
             {
+                if(p.z < 0 || p.z > 255)
+                {
+                    std::cout << p.z << " ";
+                }
                 zbuffer[iz] = p.z;
                 // determine location in texture
                 vector2f a = {vts[0].u, vts[0].v};
@@ -510,7 +532,8 @@ int main(int argc, char** argv)
         frame.clear();
         
         std::array<float, width * height> zbuffer;
-        zbuffer.fill(std::numeric_limits<float>::lowest());
+//        zbuffer.fill(std::numeric_limits<float>::lowest());
+        zbuffer.fill(0);
         
         for(const face& f: model1.f)
         {
@@ -546,9 +569,14 @@ int main(int argc, char** argv)
                 triangle3_texture2(sc_pts, frame, vt_pts, texture, zbuffer.data(), light_intensity);
             }
         }
+        TGAImage zbuf_image(width, height, TGAImage::GRAYSCALE);
+        dump_zbuffer(zbuffer.data(), zbuf_image);
+        zbuf_image.flip_vertically();
+        zbuf_image.write_tga_file("zbuffer_out.tga");
+        
         
         frame.flip_vertically();
-        frame.write_tga_file("output_head_lesson5_angled.tga");
+        frame.write_tga_file("output_head_lesson5_angled_00.tga");
     }
     
     return 0;
