@@ -42,6 +42,10 @@ vector3f barycentric3(const vector3<T>& a, const vector3<T>& b, const vector3<T>
     const float d20 = v2.dot(v0);
     const float d21 = v2.dot(v1);
     const float denom = d00 * d11 - d01 * d01;
+    if(denom == 0.f)
+    {
+        return {-1.f, 0.f, 0.f};
+    }
     const float v = (d11 * d20 - d01 * d21) / denom;
     const float w = (d00 * d21 - d01 * d20) / denom;
     const float u = 1.f - v - w;
