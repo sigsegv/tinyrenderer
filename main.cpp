@@ -191,7 +191,7 @@ void dump_zbuffer(float* zbuffer, TGAImage& out)
     }
 }
 
-void triangle3_texture2(const std::array<vector3i, 3>& pts,  TGAImage& image, const std::array<vertex_texture, 3>& vts, const TGAImage& texture, float* zbuffer, float light_intensity)
+void triangle3_texture2(const std::array<vector3i, 3>& pts, const std::array<vector3f, 3>& nrmls, const vector3f& light_dir, TGAImage& image, const std::array<vertex_texture, 3>& vts, const TGAImage& texture, float* zbuffer)
 {
     vector3i t0 = pts[0]; t0.z = 0;
     vector3i t1 = pts[1]; t1.z = 0;
@@ -238,13 +238,25 @@ void triangle3_texture2(const std::array<vector3i, 3>& pts,  TGAImage& image, co
                 b = b * bc_screen[1];
                 c = c * bc_screen[2];
                 vector2f tc = a + b + c;
-                tc.x *= texture.get_width();
-                tc.y *= texture.get_height();
-                TGAColor color = texture.get(tc.x, tc.y);
-                //                color.r *= light_intensity;
-                //                color.g *= light_intensity;
-                //                color.b *= light_intensity;
-                image.set(p.x, p.y, color);
+                
+                // determine normal at this location
+                vector3f n0 = nrmls[0] * bc_screen[0];
+                vector3f n1 = nrmls[1] * bc_screen[1];
+                vector3f n2 = nrmls[2] * bc_screen[2];
+                vector3f n = n0 + n1 + n2;
+                float light_intensity = n.dot(light_dir);
+                
+                if(light_intensity > 0.f)
+                {
+                    tc.x *= texture.get_width();
+                    tc.y *= texture.get_height();
+                    TGAColor color = texture.get(tc.x, tc.y);
+//                    TGAColor color(255, 255, 255, 255);
+                    color.r *= light_intensity;
+                    color.g *= light_intensity;
+                    color.b *= light_intensity;
+                    image.set(p.x, p.y, color);
+                }
             }
         }
     }
@@ -521,19 +533,18 @@ int main(int argc, char** argv)
         vector3f up = {0.f, 1.f, 0.f};
         matrix44f model = matrix44f::identity();
         matrix44f view = look_at(eye, center, up);
-        //std::cout << "view:\n" << view << "\n";
         matrix44f projection = matrix44f::identity();
         projection[3][2] = -1.f/(eye-center).magnitude();
-        //std::cout << "projection:\n" << projection << "\n";
         matrix44f viewport = view_port(width/8,height/8,width*3/4,height*3/4);
-        //std::cout << "viewport:\n" << viewport << "\n";
         
         TGAImage frame(width, height, TGAImage::RGB);
         frame.clear();
         
         std::array<float, width * height> zbuffer;
-//        zbuffer.fill(std::numeric_limits<float>::lowest());
         zbuffer.fill(0);
+        
+        light_dir = {0.5f, 0.5f, 1.f};
+        light_dir = light_dir.unit();
         
         for(const face& f: model1.f)
         {
@@ -545,9 +556,28 @@ int main(int argc, char** argv)
             vector3f& wc_v2 = model1.v[f.v2];
             vector3f& wc_v3 = model1.v[f.v3];
             std::array<vector3i, 3> sc_pts;
+            std::array<vector3f, 3> nrmls;
+            nrmls[0] = model1.vn[f.vn1];
+            nrmls[1] = model1.vn[f.vn2];
+            nrmls[2] = model1.vn[f.vn3];
             
             matrix44f ctm = viewport * projection * view * model;
             
+            // CTM to translate normals
+            matrix44f ctm_n = (view * model).inverse().transpose();
+            
+            // update normals
+            matrix41f vn = vec3f_to_mat41f(nrmls[0]);
+            vn = ctm_n * vn;
+            nrmls[0] = mat41f_to_vec3f(vn);
+            vn = vec3f_to_mat41f(nrmls[1]);
+            vn = ctm_n * vn;
+            nrmls[1] = mat41f_to_vec3f(vn);
+            vn = vec3f_to_mat41f(nrmls[2]);
+            vn = ctm_n * vn;
+            nrmls[2] = mat41f_to_vec3f(vn);
+            
+            // update position
             matrix41f v = vec3f_to_mat41f(wc_v1);
             v = ctm * v;
             sc_pts[0]= vec3f_to_vec3i(mat41f_to_vec3f(v));
@@ -560,14 +590,7 @@ int main(int argc, char** argv)
             v = ctm * v;
             sc_pts[2]= vec3f_to_vec3i(mat41f_to_vec3f(v));
             
-            //std::cout << sc_pts[0] << ", " << sc_pts[1] << ", " << sc_pts[2] << "\n";
-            
-            vector3f n = (wc_v3 - wc_v1).cross(wc_v2 - wc_v1).unit(); // get normal of face from cross product of two of the faces side
-            float light_intensity = n.dot(light_dir);
-            //if(light_intensity > 0.f)
-            {
-                triangle3_texture2(sc_pts, frame, vt_pts, texture, zbuffer.data(), light_intensity);
-            }
+            triangle3_texture2(sc_pts, nrmls, light_dir, frame, vt_pts, texture, zbuffer.data());
         }
         TGAImage zbuf_image(width, height, TGAImage::GRAYSCALE);
         dump_zbuffer(zbuffer.data(), zbuf_image);
@@ -576,7 +599,7 @@ int main(int argc, char** argv)
         
         
         frame.flip_vertically();
-        frame.write_tga_file("output_head_lesson5_angled_00.tga");
+        frame.write_tga_file("output_head_lesson5_angled_gouraud.tga");
     }
     
     return 0;
