@@ -8,6 +8,7 @@
 #include "model.hpp"
 #include "geometry.hpp"
 #include "matrix.hpp"
+#include "our_gl.hpp"
 
 
 const TGAColor white(255, 255, 255, 255);
@@ -295,11 +296,48 @@ matrix44f view_port(int x, int y, int w, int h)
     return m;
 }
 
+model model1;
+vector3f gl_light_dir = {1.f, 1.f, 1.f};
+
+class gouraud_shader : public ishader
+{
+public:
+    vector3f varying_intensity; // written by vertex shader, read by fragment shader
+    //std::array<vector3f, 3> varying_normals;
+    
+    virtual vector3f vertex(unsigned iface, unsigned nthvert) override
+    {
+        face& f = model1.f[iface];
+        unsigned int vi = (nthvert == 0) ? f.v1 : ((nthvert == 1) ? f.v2 : f.v3);
+        vector3f vertex = model1.v[vi];
+        
+        matrix44f ctm = gl_viewport * gl_projection * gl_modelview;
+        matrix44f ctm_n = (gl_modelview).inverse().transpose();
+        
+        unsigned int ni = (nthvert == 0) ? f.vn1 : ((nthvert == 1) ? f.vn2 : f.vn3);
+        vector3f normal = model1.vn[ni];
+        matrix41f v = vec3f_to_mat41f(normal);
+        v = ctm_n * v;
+        varying_intensity[nthvert] = std::max(0.f, mat41f_to_vec3f(v).dot(gl_light_dir));
+        
+        v = vec3f_to_mat41f(vertex);
+        v = ctm * v;
+        return mat41f_to_vec3f(v);
+    }
+    
+    virtual bool fragment(const vector3f& bar, TGAColor& color) override
+    {
+        const float intensity = varying_intensity.dot(bar);
+        const unsigned char c = 255 * intensity;
+        color = TGAColor(c,c,c,255);
+        return false;
+    }
+};
+
 int main(int argc, char** argv)
 {
     //matrix4_test();
     
-    model model1;
     model1.load_from_disk("assets/african_head.obj");
     assert(model1.v.size() == 1258);
     assert(model1.vt.size() == 1339);
@@ -600,6 +638,39 @@ int main(int argc, char** argv)
         
         frame.flip_vertically();
         frame.write_tga_file("output_head_lesson5_angled_gouraud.tga");
+    }
+    
+    {
+        // lesson6
+        constexpr int width  = 800;
+        constexpr int height = 800;
+        
+        vector3f eye = {1.f, 1.f, 3.f};
+        vector3f centre = {0.f, 0.f, 0.f};
+        vector3f up = {0.f, 1.f, 0.f};
+        
+        gl_look_at(eye, centre, up);
+        gl_view_port(width / 8, height / 8, width * 3 / 4, height * 3 / 4);
+        gl_light_dir = gl_light_dir.unit();
+        
+        TGAImage buffer(width, height, TGAImage::RGB);
+        TGAImage zbuffer(width, height, TGAImage::GRAYSCALE);
+        
+        gouraud_shader shader;
+        for(unsigned i = 0; i < model1.f.size(); ++i)
+        {
+            std::array<vector3f, 3> screen_coords;
+            for(unsigned j = 0; j < 3; ++j)
+            {
+                screen_coords[j] = shader.vertex(i, j);
+            }
+            gl_triangle(screen_coords, shader, buffer, zbuffer);
+        }
+        
+        buffer.flip_vertically();
+        zbuffer.flip_vertically();
+        buffer.write_tga_file("lesson6_buffer.tga");
+        zbuffer.write_tga_file("lesson6_zbuffer.tga");
     }
     
     return 0;
