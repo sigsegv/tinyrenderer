@@ -303,7 +303,7 @@ class gouraud_shader : public ishader
 {
 public:
     vector3f varying_intensity; // written by vertex shader, read by fragment shader
-    //std::array<vector3f, 3> varying_normals;
+    matrix<float,2,3> varying_uv; // same as above
     
     virtual vector3f vertex(unsigned iface, unsigned nthvert) override
     {
