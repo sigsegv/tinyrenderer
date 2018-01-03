@@ -297,24 +297,27 @@ matrix44f view_port(int x, int y, int w, int h)
 }
 
 model model1;
+TGAImage texture;
 vector3f gl_light_dir = {1.f, 1.f, 1.f};
 
 class gouraud_shader : public ishader
 {
 public:
     vector3f varying_intensity; // written by vertex shader, read by fragment shader
-    matrix<float,2,3> varying_uv; // same as above
+    matrix<float,3,2> varying_uv; // same as above
     
     virtual vector3f vertex(unsigned iface, unsigned nthvert) override
     {
         face& f = model1.f[iface];
-        unsigned int vi = (nthvert == 0) ? f.v1 : ((nthvert == 1) ? f.v2 : f.v3);
+        const unsigned int vi = (nthvert == 0) ? f.v1 : ((nthvert == 1) ? f.v2 : f.v3);
+        const unsigned int ni = (nthvert == 0) ? f.vn1 : ((nthvert == 1) ? f.vn2 : f.vn3);
+        const unsigned int ti = (nthvert == 0) ? f.vt1 : ((nthvert == 1) ? f.vt2 : f.vt3);
         vector3f vertex = model1.v[vi];
         
         matrix44f ctm = gl_viewport * gl_projection * gl_modelview;
         matrix44f ctm_n = (gl_modelview).inverse().transpose();
         
-        unsigned int ni = (nthvert == 0) ? f.vn1 : ((nthvert == 1) ? f.vn2 : f.vn3);
+        
         vector3f normal = model1.vn[ni];
         matrix41f v = vec3f_to_mat41f(normal);
         v = ctm_n * v;
@@ -322,14 +325,40 @@ public:
         
         v = vec3f_to_mat41f(vertex);
         v = ctm * v;
+        
+        varying_uv[nthvert][0] = model1.vt[ti].u;
+        varying_uv[nthvert][1] = model1.vt[ti].v;
+        
         return mat41f_to_vec3f(v);
     }
     
     virtual bool fragment(const vector3f& bar, TGAColor& color) override
     {
+        const bool apply_texture = true;
         const float intensity = varying_intensity.dot(bar);
-        const unsigned char c = 255 * intensity;
-        color = TGAColor(c,c,c,255);
+        
+        if(apply_texture)
+        {
+            vector2f uv1 = {varying_uv[0][0], varying_uv[0][1]};
+            vector2f uv2 = {varying_uv[1][0], varying_uv[1][1]};
+            vector2f uv3 = {varying_uv[2][0], varying_uv[2][1]};
+            uv1 = uv1 * bar[0];
+            uv2 = uv2 * bar[1];
+            uv3 = uv3 * bar[2];
+            vector2f uv = uv1 + uv2 + uv3;
+            uv[0] *= texture.get_width();
+            uv[1] *= texture.get_height();
+            color = texture.get(uv[0], uv[1]);
+            color.r *= intensity;
+            color.g *= intensity;
+            color.b *= intensity;
+        }
+        else
+        {
+            const unsigned char c =  255 * intensity;
+            color = TGAColor(c,c,c,255);
+        }
+        
         return false;
     }
 };
@@ -473,8 +502,7 @@ int main(int argc, char** argv)
         frame4.flip_vertically();
         frame4.write_tga_file("output_head_flat_shaded_zbuffer.tga");
     }
-    
-    TGAImage texture;
+
     if(!texture.read_tga_file("assets/african_head_diffuse.tga"))
     {
         std::cout << "Error reading texture\n";
