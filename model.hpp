@@ -4,6 +4,7 @@
 #include <vector>
 #include <array>
 #include "geometry.hpp"
+#include "tgaimage.h"
 
 //struct vertex
 //{
@@ -35,10 +36,13 @@ class model
 public:
     model();
     void load_from_disk(const std::string& filepath);
+    void load_diffuse_map_from_disk(const std::string& filepath);
+    TGAColor diffuse(const vector2f& uv);
     
     std::vector< vertex > v;
     std::vector< vertex_texture > vt;
     std::vector< vertex_normal > vn;
     std::vector< face > f;
 private:
+    TGAImage m_diffuse;
 };

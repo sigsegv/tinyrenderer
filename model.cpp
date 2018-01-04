@@ -65,3 +65,18 @@ void model::load_from_disk(const std::string& filepath)
     }
 }
 
+void model::load_diffuse_map_from_disk(const std::string& filepath)
+{
+    if(!m_diffuse.read_tga_file(filepath.c_str()))
+    {
+        throw std::runtime_error("unable to open file " + filepath);
+    }
+    m_diffuse.flip_vertically();
+}
+
+TGAColor model::diffuse(const vector2f& uv)
+{
+    const float u = m_diffuse.get_width() * uv[0];
+    const float v = m_diffuse.get_height() * uv[1];
+    return m_diffuse.get(u, v);
+}

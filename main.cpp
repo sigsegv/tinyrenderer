@@ -346,12 +346,7 @@ public:
             uv2 = uv2 * bar[1];
             uv3 = uv3 * bar[2];
             vector2f uv = uv1 + uv2 + uv3;
-            uv[0] *= texture.get_width();
-            uv[1] *= texture.get_height();
-            color = texture.get(uv[0], uv[1]);
-            color.r *= intensity;
-            color.g *= intensity;
-            color.b *= intensity;
+            color = model1.diffuse(uv) * intensity;
         }
         else
         {
@@ -368,6 +363,7 @@ int main(int argc, char** argv)
     //matrix4_test();
     
     model1.load_from_disk("assets/african_head.obj");
+    model1.load_diffuse_map_from_disk("assets/african_head_diffuse.tga");
     assert(model1.v.size() == 1258);
     assert(model1.vt.size() == 1339);
     assert(model1.vn.size() == 1258);
