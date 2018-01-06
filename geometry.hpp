@@ -8,6 +8,8 @@ using vector2i = vector2<int>;
 using vector2f = vector2<float>;
 using vector3i = vector3<int>;
 using vector3f = vector3<float>;
+using matrix21f = matrix<float,2,1>;
+using matrix31f = matrix<float,3,1>;
 
 /**
  * Compute barycentric of 2d triangle defined by v1, v2, v3.
@@ -57,6 +59,11 @@ inline matrix41f vec3f_to_mat41f(const vector3f& v)
     return matrix41f{v.x, v.y, v.z, 1.f};
 }
 
+inline matrix31f vec3f_to_mat31f(const vector3f& v)
+{
+    return matrix31f{v.x, v.y, v.z};
+}
+
 inline vector3f mat41f_to_vec3f(const matrix41f& m)
 {
     return vector3f{m[0][0] / m[3][0], m[1][0] / m[3][0], m[2][0] / m[3][0]};
@@ -65,4 +72,9 @@ inline vector3f mat41f_to_vec3f(const matrix41f& m)
 inline vector3i vec3f_to_vec3i(const vector3f& v)
 {
     return { static_cast<int>(v.x + .5f), static_cast<int>(v.y + .5f), static_cast<int>(v.z + .5f) };
+}
+
+inline vector2f mat21f_to_vec2f(const matrix21f& m)
+{
+    return {m[0][0], m[1][0]};
 }

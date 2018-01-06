@@ -37,7 +37,10 @@ public:
     model();
     void load_from_disk(const std::string& filepath);
     void load_diffuse_map_from_disk(const std::string& filepath);
+    void load_normal_map_from_disk(const std::string& filepath);
+    
     TGAColor diffuse(const vector2f& uv);
+    vector3f normal(const vector2f& uv);
     
     std::vector< vertex > v;
     std::vector< vertex_texture > vt;
@@ -45,4 +48,5 @@ public:
     std::vector< face > f;
 private:
     TGAImage m_diffuse;
+    TGAImage m_normal;
 };

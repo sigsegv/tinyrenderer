@@ -65,6 +65,21 @@ void model::load_from_disk(const std::string& filepath)
     }
 }
 
+TGAColor model::diffuse(const vector2f& uv)
+{
+    const float u = m_diffuse.get_width() * uv[0];
+    const float v = m_diffuse.get_height() * uv[1];
+    return m_diffuse.get(u, v);
+}
+
+vector3f model::normal(const vector2f& uv)
+{
+    const float u = m_normal.get_width() * uv[0];
+    const float v = m_normal.get_height() * uv[1];
+    TGAColor color = m_normal.get(u, v);
+    return {static_cast<float>(color.r) / 255.0f, static_cast<float>(color.g) / 255.0f, static_cast<float>(color.b) / 255.0f};
+}
+
 void model::load_diffuse_map_from_disk(const std::string& filepath)
 {
     if(!m_diffuse.read_tga_file(filepath.c_str()))
@@ -74,9 +89,12 @@ void model::load_diffuse_map_from_disk(const std::string& filepath)
     m_diffuse.flip_vertically();
 }
 
-TGAColor model::diffuse(const vector2f& uv)
+void model::load_normal_map_from_disk(const std::string& filepath)
 {
-    const float u = m_diffuse.get_width() * uv[0];
-    const float v = m_diffuse.get_height() * uv[1];
-    return m_diffuse.get(u, v);
+    if(!m_normal.read_tga_file(filepath.c_str()))
+    {
+        throw std::runtime_error("unable to open file " + filepath);
+    }
+    m_normal.flip_vertically();
 }
+

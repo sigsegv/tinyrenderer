@@ -303,8 +303,11 @@ vector3f gl_light_dir = {1.f, 1.f, 1.f};
 class gouraud_shader : public ishader
 {
 public:
-    vector3f varying_intensity; // written by vertex shader, read by fragment shader
-    matrix<float,3,2> varying_uv; // same as above
+    vector3f varying_intensity;   // written by vertex shader, read by fragment shader
+    matrix<float,2,3> varying_uv; // same as above
+    
+    matrix44f uniform_m;   // projection*modelview
+    matrix44f uniform_mit; // (projection*modelview).invert_transpose()
     
     virtual vector3f vertex(unsigned iface, unsigned nthvert) override
     {
@@ -314,20 +317,16 @@ public:
         const unsigned int ti = (nthvert == 0) ? f.vt1 : ((nthvert == 1) ? f.vt2 : f.vt3);
         vector3f vertex = model1.v[vi];
         
-        matrix44f ctm = gl_viewport * gl_projection * gl_modelview;
-        matrix44f ctm_n = (gl_modelview).inverse().transpose();
-        
-        
         vector3f normal = model1.vn[ni];
         matrix41f v = vec3f_to_mat41f(normal);
-        v = ctm_n * v;
+        v = uniform_mit * v;
         varying_intensity[nthvert] = std::max(0.f, mat41f_to_vec3f(v).dot(gl_light_dir));
         
         v = vec3f_to_mat41f(vertex);
-        v = ctm * v;
+        v = uniform_m * v;
         
-        varying_uv[nthvert][0] = model1.vt[ti].u;
-        varying_uv[nthvert][1] = model1.vt[ti].v;
+        varying_uv[0][nthvert] = model1.vt[ti].u;
+        varying_uv[1][nthvert] = model1.vt[ti].v;
         
         return mat41f_to_vec3f(v);
     }
@@ -339,14 +338,9 @@ public:
         
         if(apply_texture)
         {
-            vector2f uv1 = {varying_uv[0][0], varying_uv[0][1]};
-            vector2f uv2 = {varying_uv[1][0], varying_uv[1][1]};
-            vector2f uv3 = {varying_uv[2][0], varying_uv[2][1]};
-            uv1 = uv1 * bar[0];
-            uv2 = uv2 * bar[1];
-            uv3 = uv3 * bar[2];
-            vector2f uv = uv1 + uv2 + uv3;
-            color = model1.diffuse(uv) * intensity;
+            const matrix31f bar_matrix = vec3f_to_mat31f(bar);
+            const matrix21f uv = varying_uv * bar_matrix;
+            color = model1.diffuse(mat21f_to_vec2f(uv)) * intensity;
         }
         else
         {
@@ -364,6 +358,7 @@ int main(int argc, char** argv)
     
     model1.load_from_disk("assets/african_head.obj");
     model1.load_diffuse_map_from_disk("assets/african_head_diffuse.tga");
+    model1.load_normal_map_from_disk("assets/african_head_nm.tga");
     assert(model1.v.size() == 1258);
     assert(model1.vt.size() == 1339);
     assert(model1.vn.size() == 1258);
@@ -681,6 +676,8 @@ int main(int argc, char** argv)
         TGAImage zbuffer(width, height, TGAImage::GRAYSCALE);
         
         gouraud_shader shader;
+        shader.uniform_m = gl_viewport * gl_projection * gl_modelview;
+        shader.uniform_mit = (gl_modelview).inverse().transpose();
         for(unsigned i = 0; i < model1.f.size(); ++i)
         {
             std::array<vector3f, 3> screen_coords;
