@@ -328,10 +328,15 @@ public:
         const float specular = std::pow(std::max(r.z, 0.f), spec_map_v);
         const float diffuse = std::max(0.f, n.dot(l));
         
+        const float spec_factor = 0.5f;
+        const float diff_factor = 0.4f;
+        const float amb_factor = 0.2f;
+        const float computed = amb_factor + spec_factor * specular + diff_factor * diffuse;
+        
         color = model1.diffuse(mat21f_to_vec2f(uv));
         for(int i=0; i<3; ++i)
         {
-            color[i] = std::min<float>(5.f + color[i] * (diffuse + 0.6f * specular), 255);
+            color[i] = std::min<unsigned char>(255, static_cast<unsigned char>(computed * color[i]));
         }
         return false;
     }
