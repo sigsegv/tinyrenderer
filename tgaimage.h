@@ -71,6 +71,16 @@ struct TGAColor {
         res.r *= intensity;
         return res;
     }
+    
+    const unsigned char& operator[](unsigned index) const
+    {
+        return raw[index];
+    }
+    
+    unsigned char& operator[](unsigned index)
+    {
+        return raw[index];
+    }
 };
 
 

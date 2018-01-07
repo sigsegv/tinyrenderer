@@ -72,6 +72,13 @@ TGAColor model::diffuse(const vector2f& uv)
     return m_diffuse.get(u, v);
 }
 
+float model::specular(const vector2f& uv)
+{
+    const float u = m_specular.get_width() * uv[0];
+    const float v = m_specular.get_height() * uv[1];
+    return static_cast<float>(m_specular.get(u, v)[0]);
+}
+
 vector3f model::normal(const vector2f& uv)
 {
     const float u = m_normal.get_width() * uv[0];
@@ -117,5 +124,14 @@ void model::load_normal_map_from_disk(const std::string& filepath)
         throw std::runtime_error("unable to open file " + filepath);
     }
     m_normal.flip_vertically();
+}
+
+void model::load_specular_map_from_disk(const std::string& filepath)
+{
+    if(!m_specular.read_tga_file(filepath.c_str()))
+    {
+        throw std::runtime_error("unable to open file " + filepath);
+    }
+    m_specular.flip_vertically();
 }
 

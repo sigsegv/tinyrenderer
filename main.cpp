@@ -319,20 +319,19 @@ public:
     
     virtual bool fragment(const vector3f& bar, TGAColor& color) override
     {
-        const bool apply_texture = true;
-        matrix31f mat_bar = vec3f_to_mat31f(bar);
-        matrix21f uv = varying_uv*mat_bar;
-        vector3f n = mat41f_to_vec3f(uniform_mit * vec3f_to_mat41f(model1.normal(mat21f_to_vec2f(uv)))).unit();
-        vector3f l = mat41f_to_vec3f(uniform_m * vec3f_to_mat41f(gl_light_dir)).unit();
-        const float intensity = std::max(0.f, n.dot(l));
-        if(apply_texture)
+        const matrix31f mat_bar = vec3f_to_mat31f(bar);
+        const matrix21f uv = varying_uv*mat_bar;
+        const vector3f n = mat41f_to_vec3f(uniform_mit * vec3f_to_mat41f(model1.normal(mat21f_to_vec2f(uv)))).unit();
+        const vector3f l = mat41f_to_vec3f(uniform_m * vec3f_to_mat41f(gl_light_dir)).unit();
+        const vector3f r = (n * (n.dot(l)*2.f) - l).unit();
+        const float spec_map_v = model1.specular(mat21f_to_vec2f(uv));
+        const float specular = std::pow(std::max(r.z, 0.f), spec_map_v);
+        const float diffuse = std::max(0.f, n.dot(l));
+        
+        color = model1.diffuse(mat21f_to_vec2f(uv));
+        for(int i=0; i<3; ++i)
         {
-            color = model1.diffuse(mat21f_to_vec2f(uv)) * intensity;
-        }
-        else
-        {
-            const unsigned char c =  255 * intensity;
-            color = TGAColor(c,c,c,255);
+            color[i] = std::min<float>(5.f + color[i] * (diffuse + 0.6f * specular), 255);
         }
         return false;
     }
@@ -345,6 +344,7 @@ int main(int argc, char** argv)
     model1.load_from_disk("assets/african_head.obj");
     model1.load_diffuse_map_from_disk("assets/african_head_diffuse.tga");
     model1.load_normal_map_from_disk("assets/african_head_nm.tga");
+    model1.load_specular_map_from_disk("assets/african_head_spec.tga");
     assert(model1.v.size() == 1258);
     assert(model1.vt.size() == 1339);
     assert(model1.vn.size() == 1258);

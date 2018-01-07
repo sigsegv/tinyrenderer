@@ -134,6 +134,12 @@ public:
         throw std::out_of_range("this type only has 3 dimensions");
     }
 };
+
+template<typename T>
+constexpr vector3<T> operator*(const T& lhs, const vector3<T>& rhs)
+{
+    return {rhs[0] * lhs, rhs[1] * lhs, rhs[2] * lhs};
+}
     
 template<typename T>
 std::ostream& operator<<(std::ostream& os, const vector3<T>& v)
