@@ -78,3 +78,8 @@ inline vector2f mat21f_to_vec2f(const matrix21f& m)
 {
     return {m[0][0], m[1][0]};
 }
+
+inline matrix<float, 1, 2> vec2f_to_mat12f(const vector2f& v)
+{
+    return {v[0], v[1]};
+}

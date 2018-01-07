@@ -80,6 +80,27 @@ vector3f model::normal(const vector2f& uv)
     return {static_cast<float>(color.r) / 255.0f, static_cast<float>(color.g) / 255.0f, static_cast<float>(color.b) / 255.0f};
 }
 
+//const vector3f& model::normal(int iface, int nthvert)
+//{
+//    face& fc = f[iface];
+//    const unsigned int ni = (nthvert == 0) ? fc.vn1 : ((nthvert == 1) ? fc.vn2 : fc.vn3);
+//    return vn[ni];
+//}
+
+vector2f model::get_uv(int iface, int nthvert)
+{
+    face& fc = f[iface];
+    const unsigned int ti = (nthvert == 0) ? fc.vt1 : ((nthvert == 1) ? fc.vt2 : fc.vt3);
+    return {vt[ti].u, vt[ti].v};
+}
+
+vector3f model::get_vertex(int iface, int nthvert)
+{
+    face& fc = f[iface];
+    const unsigned int vi = (nthvert == 0) ? fc.v1 : ((nthvert == 1) ? fc.v2 : fc.v3);
+    return v[vi];
+}
+
 void model::load_diffuse_map_from_disk(const std::string& filepath)
 {
     if(!m_diffuse.read_tga_file(filepath.c_str()))

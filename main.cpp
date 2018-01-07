@@ -303,7 +303,6 @@ vector3f gl_light_dir = {1.f, 1.f, 1.f};
 class gouraud_shader : public ishader
 {
 public:
-    vector3f varying_intensity;   // written by vertex shader, read by fragment shader
     matrix<float,2,3> varying_uv; // same as above
     
     matrix44f uniform_m;   // projection*modelview
@@ -311,35 +310,23 @@ public:
     
     virtual vector3f vertex(unsigned iface, unsigned nthvert) override
     {
-        face& f = model1.f[iface];
-        const unsigned int vi = (nthvert == 0) ? f.v1 : ((nthvert == 1) ? f.v2 : f.v3);
-        const unsigned int ni = (nthvert == 0) ? f.vn1 : ((nthvert == 1) ? f.vn2 : f.vn3);
-        const unsigned int ti = (nthvert == 0) ? f.vt1 : ((nthvert == 1) ? f.vt2 : f.vt3);
-        vector3f vertex = model1.v[vi];
-        
-        vector3f normal = model1.vn[ni];
-        matrix41f v = vec3f_to_mat41f(normal);
-        v = uniform_mit * v;
-        varying_intensity[nthvert] = std::max(0.f, mat41f_to_vec3f(v).dot(gl_light_dir));
-        
-        v = vec3f_to_mat41f(vertex);
+        varying_uv.set_col(nthvert, vec2f_to_mat12f(model1.get_uv(iface, nthvert)));
+        vector3f vertex = model1.get_vertex(iface, nthvert);
+        matrix41f v = vec3f_to_mat41f(vertex);
         v = uniform_m * v;
-        
-        varying_uv[0][nthvert] = model1.vt[ti].u;
-        varying_uv[1][nthvert] = model1.vt[ti].v;
-        
         return mat41f_to_vec3f(v);
     }
     
     virtual bool fragment(const vector3f& bar, TGAColor& color) override
     {
         const bool apply_texture = true;
-        const float intensity = varying_intensity.dot(bar);
-        
+        matrix31f mat_bar = vec3f_to_mat31f(bar);
+        matrix21f uv = varying_uv*mat_bar;
+        vector3f n = mat41f_to_vec3f(uniform_mit * vec3f_to_mat41f(model1.normal(mat21f_to_vec2f(uv)))).unit();
+        vector3f l = mat41f_to_vec3f(uniform_m * vec3f_to_mat41f(gl_light_dir)).unit();
+        const float intensity = std::max(0.f, n.dot(l));
         if(apply_texture)
         {
-            const matrix31f bar_matrix = vec3f_to_mat31f(bar);
-            const matrix21f uv = varying_uv * bar_matrix;
             color = model1.diffuse(mat21f_to_vec2f(uv)) * intensity;
         }
         else
@@ -347,7 +334,6 @@ public:
             const unsigned char c =  255 * intensity;
             color = TGAColor(c,c,c,255);
         }
-        
         return false;
     }
 };
