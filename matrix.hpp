@@ -99,6 +99,21 @@ public:
         if(det == 0.f) throw std::runtime_error("matrix is singular (not invertable)");
         return inverse_impl(det, *this);
     }
+    
+    /**
+     * Replace column with values from new 1 row matrix
+     *
+     * @return this
+     */
+    matrix& set_col(unsigned col, const matrix<T, 1, kRows>& v)
+    {
+        if(!(col < kCols)) throw std::runtime_error("Out of bounds col");
+        for(unsigned i = 0; i < kRows; ++i)
+        {
+            m[i][col] = v[0][i];
+        }
+        return *this;
+    }
 
     /**
      * @return row i
@@ -118,17 +133,16 @@ public:
         return m[i];
     }
     
-    template<unsigned kRhsRows, unsigned kRhsCols>
-    matrix<T, kRows, kRhsCols> operator*(const matrix<T, kRhsRows, kRhsCols>& rhs) const
+    template<unsigned kRhsCols>
+    matrix<T, kRows, kRhsCols> operator*(const matrix<T, kCols, kRhsCols>& rhs) const
     {
-        if(kCols != kRhsRows) throw std::runtime_error("columns must equal other's rows");
         matrix<T, kRows, kRhsCols> result;
         for(unsigned r = 0; r < kRows; ++r)
         {
             for(unsigned c = 0; c < kRhsCols; ++c)
             {
                 T y = T(0);
-                for(unsigned i = 0; i < kRhsRows; ++i)
+                for(unsigned i = 0; i < kCols; ++i)
                 {
                     y += m[r][i] * rhs[i][c];
                 }

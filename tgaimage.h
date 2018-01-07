@@ -57,6 +57,30 @@ struct TGAColor {
         }
         return *this;
     }
+    
+    /**
+     * Return new TGAImage whose RGB values are modified by intensity.
+     * Alpha is not modified.
+     */
+    TGAColor operator*(float intensity) const
+    {
+        intensity = intensity < 0.f ? : (1.f < intensity ? 1.f : intensity);
+        TGAColor res = *this;
+        res.b *= intensity;
+        res.g *= intensity;
+        res.r *= intensity;
+        return res;
+    }
+    
+    const unsigned char& operator[](unsigned index) const
+    {
+        return raw[index];
+    }
+    
+    unsigned char& operator[](unsigned index)
+    {
+        return raw[index];
+    }
 };
 
 
