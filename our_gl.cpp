@@ -86,3 +86,36 @@ void gl_triangle(const std::array<vector3f, 3>& pts, ishader& shader, TGAImage& 
         }
     }
 }
+
+/*
+ // old code. keeping as probably useful for wire frame rendering.
+void line(vector2i t0, vector2i t1, TGAImage &image, TGAColor color) {
+    bool steep = false;
+    if (std::abs(t0.x-t1.x)<std::abs(t0.y-t1.y)) {
+        std::swap(t0.x, t0.y);
+        std::swap(t1.x, t1.y);
+        steep = true;
+    }
+    if (t0.x>t1.x) {
+        std::swap(t0.x, t1.x);
+        std::swap(t0.y, t1.y);
+    }
+    int dx = t1.x-t0.x;
+    int dy = t1.y-t0.y;
+    int derror2 = std::abs(dy)*2;
+    int error2 = 0;
+    int y = t0.y;
+    for (int x=t0.x; x<=t1.x; x++) {
+        if (steep) {
+            image.set(y, x, color);
+        } else {
+            image.set(x, y, color);
+        }
+        error2 += derror2;
+        if (error2 > dx) {
+            y += (t1.y>t0.y?1:-1);
+            error2 -= dx*2;
+        }
+    }
+}
+*/
