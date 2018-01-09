@@ -64,11 +64,11 @@ struct TGAColor {
      */
     TGAColor operator*(float intensity) const
     {
-        intensity = intensity < 0.f ? : (1.f < intensity ? 1.f : intensity);
+        intensity = intensity < 0.f ? 0.f : (1.f < intensity ? 1.f : intensity);
         TGAColor res = *this;
-        res.b *= intensity;
-        res.g *= intensity;
-        res.r *= intensity;
+        res.b = static_cast<unsigned char>(res.b * intensity);
+        res.g = static_cast<unsigned char>(res.g * intensity);
+        res.r = static_cast<unsigned char>(res.r * intensity);
         return res;
     }
     

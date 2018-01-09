@@ -15,4 +15,10 @@ file(GLOB HDR *.hpp;*.h)
 file(GLOB SRC *.cpp)
 
 add_executable(${PROJECT_NAME} ${SRC} ${HDR})
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/assets ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/assets)
+if(${MSVC})
+  set(CWD_INTERMEDIATE "")
+else()
+  set(CWD_INTERMEDIATE "/${CMAKE_CFG_INTDIR}")
+endif()
+
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/assets ${CMAKE_CURRENT_BINARY_DIR}${CWD_INTERMEDIATE}/assets)
