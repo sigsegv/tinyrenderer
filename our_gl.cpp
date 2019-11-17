@@ -40,9 +40,9 @@ void gl_look_at(const vector3f& eye, const vector3f& centre, const vector3f& up)
 
 void gl_triangle(const std::array<vector3f, 3>& pts, ishader& shader, TGAImage& buffer, TGAImage& zbuffer)
 {
-    vector3i t0 = vec3f_to_vec3i(pts[0]); t0.z = 0;
-    vector3i t1 = vec3f_to_vec3i(pts[1]); t1.z = 0;
-    vector3i t2 = vec3f_to_vec3i(pts[2]); t2.z = 0;
+    vector3f t0 = pts[0]; t0.z = 0;
+    vector3f t1 = pts[1]; t1.z = 0;
+    vector3f t2 = pts[2]; t2.z = 0;
     
     const int width = buffer.get_width();
     vector2f bboxmin{ std::numeric_limits<float>::max(),  std::numeric_limits<float>::max()};
@@ -57,7 +57,7 @@ void gl_triangle(const std::array<vector3f, 3>& pts, ishader& shader, TGAImage& 
             bboxmax[j] = std::min(clamp[j], std::max(bboxmax[j], static_cast<float>(val)));
         }
     }
-    vector3i p{0, 0,  0};
+    vector3f p{0.0, 0.0, 0.0};
     for(p.x = bboxmin.x; p.x <= bboxmax.x; ++p.x)
     {
         for(p.y = bboxmin.y; p.y <= bboxmax.y; ++p.y)
