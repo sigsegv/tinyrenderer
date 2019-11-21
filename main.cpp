@@ -44,7 +44,7 @@ public:
         const vector3f n = mat41f_to_vec3f(uniform_mit * vec3f_to_mat41f(model1.normal(mat21f_to_vec2f(uv)))).unit();
         const vector3f l = mat41f_to_vec3f(uniform_m * vec3f_to_mat41f(gl_light_dir)).unit();
         const vector3f r = (n * (n.dot(l)*2.f) - l).unit();
-        const float spec_map_v = model1.specular(mat21f_to_vec2f(uv));
+        const float spec_map_v = model1.specular(mat21f_to_vec2f(uv))[0];
         const float specular = std::pow(std::max(r.z, 0.f), spec_map_v);
         const float diffuse = std::max(0.f, n.dot(l));
         

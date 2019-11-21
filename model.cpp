@@ -72,11 +72,16 @@ TGAColor model::diffuse(const vector2f& uv)
     return m_diffuse.get(static_cast<int>(u), static_cast<int>(v));
 }
 
-float model::specular(const vector2f& uv)
+TGAColor model::specular(const vector2f& uv)
 {
-    const float u = m_specular.get_width() * uv[0];
-    const float v = m_specular.get_height() * uv[1];
-    return static_cast<float>(m_specular.get(static_cast<int>(u), static_cast<int>(v))[0]);
+    const int u = static_cast<int>(m_specular.get_width() * uv[0]);
+    const int v = static_cast<int>(m_specular.get_height() * uv[1]);
+    TGAColor color = m_specular.get(u, v);
+    if (color.bytespp == 1)
+    {
+        return TGAColor(color.b, color.b, color.b, color.a);
+    }
+    return color;
 }
 
 vector3f model::normal(const vector2f& uv)

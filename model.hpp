@@ -41,7 +41,7 @@ public:
     void load_specular_map_from_disk(const std::string& filepath);
     
     TGAColor diffuse(const vector2f& uv);
-    float specular(const vector2f& uv);
+    TGAColor specular(const vector2f& uv);
     vector3f normal(const vector2f& uv);
     const vector3f& normal(int iface, int nthvert);
     vector2f get_uv(int iface, int nthvert);
