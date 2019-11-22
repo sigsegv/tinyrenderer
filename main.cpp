@@ -43,20 +43,19 @@ public:
         const matrix21f uv = varying_uv*mat_bar;
         const vector3f n = mat41f_to_vec3f(uniform_mit * vec3f_to_mat41f(model1.normal(mat21f_to_vec2f(uv)))).unit();
         const vector3f l = mat41f_to_vec3f(uniform_m * vec3f_to_mat41f(gl_light_dir)).unit();
-        const vector3f r = (n * (n.dot(l)*2.f) - l).unit();
-        const float spec_map_v = model1.specular(mat21f_to_vec2f(uv))[0];
-        const float specular = std::pow(std::max(r.z, 0.f), spec_map_v);
-        const float diffuse = std::max(0.f, n.dot(l));
+        const vector3f r = (n * (n.dot(l)*2.f) - l).unit(); // reflected light
+        const float spec = std::pow(std::max(r.z, 0.f), model1.specular(mat21f_to_vec2f(uv))[0]);
+        const float diff = std::max(0.f, n.dot(l));
         
-        const float spec_factor = 0.6f;
+        const float spec_factor = 6.f;
         const float diff_factor = 1.f;
         const float ambient = 5.f;
-        const float computed = spec_factor * specular + diff_factor * diffuse;
         
-        color = model1.diffuse(mat21f_to_vec2f(uv));
+        TGAColor c = model1.diffuse(mat21f_to_vec2f(uv));
         for(int i=0; i<3; ++i)
         {
-            color[i] = std::min<unsigned char>(255, static_cast<unsigned char>(computed * color[i] + ambient));
+            unsigned int x = ambient + c[i] * (diff + (spec_factor * spec));
+            color[i] = static_cast<unsigned char>(std::min<unsigned int>(255.f, x));
         }
         return false;
     }
