@@ -20,7 +20,12 @@ model model1;
 TGAImage texture;
 vector3f gl_light_dir = {1.f, 1.f, 1.f};
 
-class gouraud_shader : public ishader
+vector3f normalize_color(const TGAColor& color)
+{
+    return{ color[0] / 255.f, color[1] / 255.f, color[2] / 255.f };
+}
+
+class phong_shader : public ishader
 {
 public:
     matrix<float,2,3> varying_uv; // same as above
@@ -36,7 +41,7 @@ public:
         v = uniform_m * v;
         return mat41f_to_vec3f(v);
     }
-    
+
     virtual bool fragment(const vector3f& bar, TGAColor& color) override
     {
         const matrix31f mat_bar = vec3f_to_mat31f(bar);
@@ -44,18 +49,31 @@ public:
         const vector3f n = mat41f_to_vec3f(uniform_mit * vec3f_to_mat41f(model1.normal(mat21f_to_vec2f(uv)))).unit();
         const vector3f l = mat41f_to_vec3f(uniform_m * vec3f_to_mat41f(gl_light_dir)).unit();
         const vector3f r = (n * (n.dot(l)*2.f) - l).unit(); // reflected light
-        const float spec = std::pow(std::max(r.z, 0.f), model1.specular(mat21f_to_vec2f(uv))[0]);
-        const float diff = std::max(0.f, n.dot(l));
+
+        vector3f spec_color = normalize_color(model1.specular(mat21f_to_vec2f(uv)));
+        const float spec_coef = 2.f;
+
+        vector3f ambient_color{ 0.3f, 0.3f, 0.3f };
+        const float ambient_coef = 1.f;
         
-        const float spec_factor = 6.f;
-        const float diff_factor = 1.f;
-        const float ambient = 5.f;
+        vector3f diffuse_color = normalize_color(model1.diffuse(mat21f_to_vec2f(uv)));
+        const float diffuse_coef = 1.f;
+
+        const float attenuation_coef = 1.f;
+
+        vector3f light_color = { 0.5f, 0.5f, 0.5f };
         
-        TGAColor c = model1.diffuse(mat21f_to_vec2f(uv));
-        for(int i=0; i<3; ++i)
+        const float shine = 200.f;
+       
+        for (int i = 0; i<3; ++i)
         {
-            unsigned int x = ambient + c[i] * (diff + (spec_factor * spec));
-            color[i] = static_cast<unsigned char>(std::min<unsigned int>(255.f, x));
+            const float a = ambient_color[i] * ambient_coef * diffuse_color[i];
+            const float b = attenuation_coef * light_color[i];
+            const float c = diffuse_coef * diffuse_color[i] * n.dot(l);
+            const float d = spec_coef * spec_color[i] * std::pow(r.z, shine);
+            const float y = a + b * (c + d);
+            const float z = y * 255.f;
+            color[i] = std::min(255, static_cast<int>(z));
         }
         return false;
     }
@@ -83,7 +101,7 @@ int main(int argc, char** argv)
     TGAImage buffer(width, height, TGAImage::RGB);
     TGAImage zbuffer(width, height, TGAImage::GRAYSCALE);
     
-    gouraud_shader shader;
+    phong_shader shader;
     shader.uniform_m = gl_viewport * gl_projection * gl_modelview;
     shader.uniform_mit = (gl_modelview).inverse().transpose();
     for(unsigned i = 0; i < model1.f.size(); ++i)
