@@ -36,7 +36,7 @@ int main(int argc, char** argv)
     gl_look_at(eye, centre, up);
     gl_view_port(width / 8, height / 8, width * 3 / 4, height * 3 / 4);
     
-    TGAImage buffer(width, height, TGAImage::RGBA);
+    TGAImage buffer(width, height, TGAImage::RGB);
     TGAImage zbuffer(width, height, TGAImage::GRAYSCALE);
     
     phong_shader shader;
@@ -57,8 +57,8 @@ int main(int argc, char** argv)
     
     buffer.flip_vertically();
     zbuffer.flip_vertically();
-    buffer.write_tga_file("lesson6_buffer-9999-MAIN.tga");
-    zbuffer.write_tga_file("lesson6_zbuffer-9999.tga");
+    buffer.write_tga_file("lesson6_buffer.tga");
+    zbuffer.write_tga_file("lesson6_zbuffer.tga");
     
     return 0;
 }
