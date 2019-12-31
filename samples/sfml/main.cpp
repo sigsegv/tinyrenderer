@@ -1,5 +1,5 @@
 #include <SFML/Graphics.hpp>
-#include "../../shader_phong.hpp"
+#include <shader_phong.hpp>
 
 model model1;
 TGAImage texture;
