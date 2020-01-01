@@ -72,10 +72,10 @@ void gl_triangle(const std::array<vector3f, 3>& pts, ishader& shader, TGAImage& 
             const int iz = static_cast<int>(p.x + p.y * width);
             if(zbuffer.buffer()[iz] < p.z)
             {
-                if(p.z < 0 || p.z > 255)
-                {
-                    std::cout << p.z << " ";
-                }
+                //if(p.z < 0 || p.z > 255)
+                //{
+                //    std::cout << p.z << " ";
+                //}
                 zbuffer.buffer()[iz] = p.z;
                 TGAColor color;
                 if(!shader.fragment(bary, color))

@@ -8,22 +8,21 @@ TGAImage texture;
 
 int main()
 {
-    /*model1.load_from_disk("assets/african_head.obj");
+    model1.load_from_disk("assets/african_head.obj");
     model1.load_diffuse_map_from_disk("assets/african_head_diffuse.tga");
     model1.load_normal_map_from_disk("assets/african_head_nm.tga");
-    model1.load_specular_map_from_disk("assets/african_head_spec.tga");*/
+    model1.load_specular_map_from_disk("assets/african_head_spec.tga");
 
-    model1.load_from_disk("assets/diablo3_pose.obj");
-    model1.load_diffuse_map_from_disk("assets/diablo3_pose_diffuse.tga");
-    model1.load_normal_map_from_disk("assets/diablo3_pose_nm.tga");
-    model1.load_specular_map_from_disk("assets/diablo3_pose_spec.tga");
+    //model1.load_from_disk("assets/diablo3_pose.obj");
+    //model1.load_diffuse_map_from_disk("assets/diablo3_pose_diffuse.tga");
+    //model1.load_normal_map_from_disk("assets/diablo3_pose_nm.tga");
+    //model1.load_specular_map_from_disk("assets/diablo3_pose_spec.tga");
 
     constexpr int width = 600;
     constexpr int height = 600;
 
     // lesson6
     vector3f eye = { 1.f, 1.f, 3.f };
-    //vector3f eye = { 0.7f, 1.f, 0.7f };
     vector3f centre = { 0.f, 0.f, 0.f };
     vector3f up = { 0.f, 1.f, 0.f };
 
@@ -50,7 +49,9 @@ int main()
     sf::Sprite sprite;
     sprite.setTexture(sftexture);
 
-    double camera_angle_deg = 0.0;
+    double camera_angle_deg = 90.0;
+    double camera_distance = 4.0;
+    double light_angle = 0.0;
 
     while (window.isOpen())
     {
@@ -59,23 +60,41 @@ int main()
         {
             if (event.type == sf::Event::Closed) window.close();
             
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Q))
+            {
+                camera_angle_deg += 4.0;
+            }
+            else if (sf::Keyboard::isKeyPressed(sf::Keyboard::E))
+            {
+                camera_angle_deg -= 4.0;
+            }
+            else if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
+            {
+                //if(camera_distance > 0.3) camera_distance -= 0.2;
+            }
+            else if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
+            {
+                //if (camera_distance < 100.0) camera_distance += 0.2;
+            }
             if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
             {
-                camera_angle_deg += 2.0;
+                light_angle += 4.0;
             }
             else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
             {
-                camera_angle_deg -= 2.0;
+                light_angle -= 4.0;
             }
         }
 
         buffer.clear();
         zbuffer.clear();
 
-        const double x = std::cos(camera_angle_deg / 180.0 * M_PI);
-        const double y = std::sin(camera_angle_deg / 180.0 * M_PI);
-        eye.x = 4.0 * x;
-        eye.z = 4.0 * y;
+        shader.gl_light_dir.x = std::cos(light_angle / 180.0 * M_PI);
+        shader.gl_light_dir.z = std::sin(light_angle / 180.0 * M_PI);
+        shader.gl_light_dir.unit();
+        //std::cout << shader.gl_light_dir << std::endl;
+        eye.x = camera_distance * std::cos(camera_angle_deg / 180.0 * M_PI);
+        eye.z = camera_distance * std::sin(camera_angle_deg / 180.0 * M_PI);
         
         gl_look_at(eye, centre, up);
         shader.uniform_m = gl_viewport * gl_projection * gl_modelview;
@@ -90,9 +109,6 @@ int main()
             gl_triangle(screen_coords, shader, buffer, zbuffer);
         }
 
-        buffer.flip_vertically();
-        zbuffer.flip_vertically();
-
         window.clear(sf::Color::Blue);
 
         const unsigned stride = width * 4;
@@ -101,7 +117,7 @@ int main()
         {
             for (int x = 0; x < width; ++x)
             {
-                const unsigned offset = y * stride + (x * 4);
+                const unsigned offset = (height - y - 1) * stride + (x * 4);
                 const TGAColor color = buffer.get(x,y);
                 rgba32_buffer[offset] = color.r;
                 rgba32_buffer[offset + 1] = color.g;
